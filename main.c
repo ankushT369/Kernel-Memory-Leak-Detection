@@ -10,7 +10,7 @@
 #define INTERVAL 5
 
 typedef struct {
-    char obj_name[MAX_NAME_LEN];        // slab name
+    char name[MAX_NAME_LEN];            // slab-cache name
     unsigned int active_objs;           // number of active objects
     unsigned int num_objs;              // total number of objects
     size_t objsize;                     // size of each object in bytes
