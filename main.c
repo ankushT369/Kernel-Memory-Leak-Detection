@@ -1,90 +1,109 @@
-#include<stdio.h>
-#include<string.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <string.h>
+#include <sys/types.h>
+#include <sys/wait.h>
 
 #include "kmld.h"
 #include "list.h"
-//initally taking only /proc/slabinfo
-//then growth detection from it solely from there no involvment from /proc/vmstat
-//short term memory analysis and then detecting the Top-N growth
 
-void read_slabinfo(int ops) {
-    printf("opening file %s\n", FILE_SLABINFO);
-    FILE* file = fopen(FILE_SLABINFO, "r");
-    if (!file) {
-        //perror here for error handling
-        return ;
+// Helper to read one line at a time from a pipe(as fgets doesn't work so well in pipe)
+int read_line_from_pipe(int fd, char *line) {
+    char ch;
+    int idx = 0;
+    while (read(fd, &ch, 1) > 0) {
+        if (ch == '\n') break;
+        if (idx < LINE_BUFFER - 1)
+            line[idx++] = ch;
     }
-    printf("%s opened successfully \n", FILE_SLABINFO);
+    line[idx] = '\0';
+    return idx > 0;
+}
 
-    /*
-     * line 1: slabinfo - version: 2.1
-     * line 2: # name            <active_objs> <num_objs> <objsize> <objperslab> <pagesperslab> : tunables <limit> <batchcount> <sharedfactor> : slabdata <active_slabs> <num_slabs> <sharedavail>
-     * line 3: ovl_inode             88     88    720   22    4 : tunables    0    0    0 : slabdata      4      4      0
-     * line 4: nf_conntrack_expect      0      0    208   39    2 : tunables    0    0    0 : slabdata      0      0      0
-     * so on..
-     */
+int main() {
+    int fds[2];  // need 2 buffers for ipc
 
-    //we took line buffer to store the above lines
-    char line[LINE_BUFFER];
+    if (pipe(fds) == -1) { // optimized line for pipe as well as condition execution
+        perror("pipe creation failed");
+        exit(1);
+    }
 
-    //skip the above 2 lines trivial for our needs
-    fgets(line, sizeof(line), file); //"slabinfo - version" (line 1)
-    fgets(line, sizeof(line), file); //header line with field names (line 2)
+    pid_t pid = fork();
 
-    //this while-loop parses everytime a new line from the /proc/slabinfo file
-    //and it does untill it encounters end of file(end of /proc/slabinfo)
-    while (fgets(line, sizeof(line), file)) {
+    if (pid < 0) {
+        perror("fork failed");
+        exit(1);
+    }
+
+    if (pid == 0) {
+        // Child Process: Slab Reader
+        close(fds[0]); // close read end
+
+        while (1) {
+            FILE *file = fopen(FILE_SLABINFO, "r");
+            if (!file) {
+                perror("cannot open /proc/slabinfo");
+                sleep(INTERVAL);
+                continue;
+            }
+
+            char line[LINE_BUFFER];
+
+            // skip first two lines
+            fgets(line, sizeof(line), file);
+            fgets(line, sizeof(line), file);
+
+            // write each slab line to the pipe
+            while (fgets(line, sizeof(line), file)) {
+                write(fds[1], line, strlen(line));
+            }
+
+            fclose(file);
+            sleep(INTERVAL);
+        }
+
+    } else {
+        // Parent Process: Analyzer
+        close(fds[1]); // close write end
+
+        char line[LINE_BUFFER];
         slabinfo s;
+        int snapshot_phase = INIT_SNAPSHOT;
 
-        //parse fields using sscanf
-        int matched = sscanf(line, "%s %u %u %zu %u %u",
-                             s.name,
-                             &s.active_objs,
-                             &s.num_objs,
-                             &s.objsize,
-                             &s.objperslab,
-                             &s.pagesperslab);
+        printf("Monitoring slab growth...\n");
 
-        //the reason matched == 6 because we are parsing 6 fields
-        //as you can see in the upper sscanf()
-        if (matched == 6) {
-            if (ops == INIT_SNAPSHOT)
-                list_add(s); 
-            else {
-                if (!list_exist(s))
+        while (1) {
+            if (!read_line_from_pipe(fds[0], line)) continue;
+
+            int matched = sscanf(line, "%s %u %u %zu %u %u",
+                                 s.name, &s.active_objs, &s.num_objs,
+                                 &s.objsize, &s.objperslab, &s.pagesperslab);
+
+            if (matched == 6) {
+                printf("Received slab: %s | Active: %u | Total: %u\n",
+                       s.name, s.active_objs, s.num_objs);
+
+                if (snapshot_phase == INIT_SNAPSHOT) {
                     list_add(s);
-                else {
-                    diff d = list_match(s);
-                    //print debug info for the change in active_objs and num objs
-                    if (d.active_objs_diff != 0 || d.num_objs_diff != 0) {
-                        printf("Slab: %-20s | Active Δ: %+6d | Total Δ: %+6d\n",
-                            s.name, d.active_objs_diff, d.num_objs_diff);
+                    snapshot_phase = CHECK_SNAPSHOT;
+                    printf("Initial snapshot completed. Now tracking growth.\n");
+                } else {
+                    if (!list_exist(s)) {
+                        list_add(s);
+                    } else {
+                        diff d = list_match(s);
+                        if (d.active_objs_diff != 0 || d.num_objs_diff != 0) {
+                            printf("Growth detected - Slab: %-20s | Active Δ: %+6d | Total Δ: %+6d\n",
+                                   s.name, d.active_objs_diff, d.num_objs_diff);
+                        }
                     }
                 }
             }
         }
+
+        wait(NULL);
     }
 
-    //list_trav();
-
-    //close the file as we have read the content
-    fclose(file);
-    return ;
-}
-
-int main(){
-    printf("other printtf stmts in accordance to the format necessary from the proc/slabinfo\n");
-    read_slabinfo(INIT_SNAPSHOT);
-    while(1) {
-        printf("changes since last snapshot:\n");
-        read_slabinfo(CHECK_SNAPSHOT);
-        sleep(INTERVAL);
-    }
     return 0;
 }
-
-//not to be done initially :
-//parsing /proc/vmstat
-//adding an overall growth history
-//threshold and alert logic
-//gui requirement? or better tui maybe manageable
