@@ -12,11 +12,13 @@
 int read_line_from_pipe(int fd, char *line) {
     char ch;
     int idx = 0;
+
     while (read(fd, &ch, 1) > 0) {
         if (ch == '\n') break;
         if (idx < LINE_BUFFER - 1)
             line[idx++] = ch;
     }
+
     line[idx] = '\0';
     return idx > 0;
 }
@@ -33,38 +35,33 @@ void print_usage() {
 }
 
 int parse_arg(int argc, char* argv[]) {
-    //arg: -diff, -all, -top 3,  
-    int flag = -1;
-    for (int i = 1; i < argc; i++) {
-        if (strcmp(argv[i], "-diff") == 0) {
-            flag = FLAG_DIFF;
-        } else if (strcmp(argv[i], "-all") == 0) {
-            flag = FLAG_ALL;
-        } else if (strcmp(argv[i], "-top") == 0) {
-            if (i + 1 < argc) {
-                int n;
-                if (sscanf(argv[i + 1], "%d", &n) == 1 && n > 0) {
-                    flag = FLAG_TOP;
-                    i++;
-                } else {
-                    fprintf(stderr, "Error: -top must be followed by a positive integer\n");
-                    exit(1);
-                }
-            } else {
-                fprintf(stderr, "Error: -top requires a number\n");
-                exit(1);
-            }
+    if (strcmp(argv[1], "-diff") == 0)
+        return FLAG_DIFF;
+
+    if (strcmp(argv[1], "-all") == 0)
+        return FLAG_ALL;
+
+    if (strcmp(argv[1], "-top") == 0) {
+        if (argc < 3) {
+            printf("Error: -top requires a number\n");
+            exit(1);
         }
 
+        int n;
+        if (sscanf(argv[2], "%d", &n) != 1 || n <= 0) {
+            printf("Error: -top must be followed by a positive integer\n");
+            exit(1);
+        }
+
+        return FLAG_TOP;
     }
 
-    return flag;
+    return FLAG_INVALID;
 }
-
 
 int main(int argc, char* argv[]) {
     if (argc < 2) {
-        //handle wrong CLI args
+        //wrong CLI args print
         print_usage();
         exit(1);
     }
@@ -73,7 +70,7 @@ int main(int argc, char* argv[]) {
     flag = parse_arg(argc, argv);
 
     if (flag == FLAG_INVALID) {
-        printf("Invalid arguments\n");
+        printf("Error: Unknown argument: %s\n", argv[1]);
         print_usage();
         exit(1);
     }
@@ -111,9 +108,9 @@ int main(int argc, char* argv[]) {
             fgets(line, sizeof(line), file);
 
             // write each slab line to the pipe
-            while (fgets(line, sizeof(line), file)) {
+            while (fgets(line, sizeof(line), file))
                 write(fds[1], line, strlen(line));
-            }
+            
 
             fclose(file);
             sleep(INTERVAL);
@@ -130,37 +127,40 @@ int main(int argc, char* argv[]) {
         printf("Monitoring slab growth...\n");
 
         while (1) {
-            if (!read_line_from_pipe(fds[0], line)) continue;
-            printf("HEY\n");
+            if (!read_line_from_pipe(fds[0], line))
+                continue;
 
             int matched = sscanf(line, "%s %u %u %zu %u %u",
                                  s.name, &s.active_objs, &s.num_objs,
                                  &s.objsize, &s.objperslab, &s.pagesperslab);
 
-            if (matched == 6) {
-                if (flag == FLAG_ALL) {
-                    printf("Received slab: %s | Active: %u | Total: %u\n",
-                        s.name, s.active_objs, s.num_objs);
-                }
+            if (matched != 6)
+                continue;
 
-                if (snapshot_phase == INIT_SNAPSHOT) {
-                    list_add(s);
-                    snapshot_phase = CHECK_SNAPSHOT;
-                    printf("Initial snapshot completed. Now tracking growth.\n");
-                } else {
-                    if (!list_exist(s)) {
-                        list_add(s);
-                    } else {
-                        diff d = list_match(s);
-                        if (d.active_objs_diff != 0 || d.num_objs_diff != 0) {
-                            if (flag == FLAG_DIFF) {
-                                printf("Growth detected - Slab: %-20s | Active Δ: %+6d | Total Δ: %+6d\n",
-                                    s.name, d.active_objs_diff, d.num_objs_diff);
-                            }
-                            //top k slabs list logic here
-                        }
-                    }
-                }
+            if (flag == FLAG_ALL) {
+                printf("Received slab: %s | Active: %u | Total: %u\n",
+                    s.name, s.active_objs, s.num_objs);
+            }
+
+            if (snapshot_phase == INIT_SNAPSHOT) {
+                list_add(s);
+                snapshot_phase = CHECK_SNAPSHOT;
+                printf("Initial snapshot completed. Now tracking growth.\n");
+                continue;
+            }
+
+            if (!list_exist(s)) {
+                list_add(s);
+                continue;
+            }
+
+            diff d = list_match(s);
+            if (d.active_objs_diff == 0 && d.num_objs_diff == 0)
+                continue;
+
+            if (flag == FLAG_DIFF) {
+                printf("Growth detected - Slab: %-20s | Active Δ: %+6d | Total Δ: %+6d\n",
+                    s.name, d.active_objs_diff, d.num_objs_diff);
             }
         }
 
