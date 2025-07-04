@@ -155,12 +155,11 @@ int main(int argc, char* argv[]) {
             }
 
             diff d = list_match(s);
-            if (d.active_objs_diff == 0 && d.num_objs_diff == 0)
-                continue;
 
             if (flag == FLAG_DIFF) {
-                printf("Growth detected - Slab: %-20s | Active Δ: %+6d | Total Δ: %+6d\n",
-                    s.name, d.active_objs_diff, d.num_objs_diff);
+                if (d.active_objs_diff != 0 || d.num_objs_diff != 0)
+                    printf("Growth detected - Slab: %-20s | Active Δ: %+6d | Total Δ: %+6d\n",
+                        s.name, d.active_objs_diff, d.num_objs_diff);
             }
         }
 
