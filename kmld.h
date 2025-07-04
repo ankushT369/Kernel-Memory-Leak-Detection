@@ -14,6 +14,13 @@
 #define INIT_SNAPSHOT 1
 #define CHECK_SNAPSHOT 2
 
+//command line arguments
+#define FLAG_DIFF 0
+#define FLAG_ALL  1
+#define FLAG_TOP  2
+#define FLAG_INVALID -1
+
+
 typedef struct {
     char name[MAX_NAME_LEN];            //slab-cache name
     unsigned int active_objs;           //number of active objects

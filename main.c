@@ -21,7 +21,63 @@ int read_line_from_pipe(int fd, char *line) {
     return idx > 0;
 }
 
-int main() {
+void print_usage() {
+    printf("Usage:\n");
+    printf("  ./program -diff             Show differences only\n");
+    printf("  ./program -all              Show all items\n");
+    printf("  ./program -top <number>     Show top N items\n");
+    printf("\nExamples:\n");
+    printf("  ./program -top 5\n");
+    printf("  ./program -diff\n");
+    printf("  ./program -all\n");
+}
+
+int parse_arg(int argc, char* argv[]) {
+    //arg: -diff, -all, -top 3,  
+    int flag = -1;
+    for (int i = 1; i < argc; i++) {
+        if (strcmp(argv[i], "-diff") == 0) {
+            flag = FLAG_DIFF;
+        } else if (strcmp(argv[i], "-all") == 0) {
+            flag = FLAG_ALL;
+        } else if (strcmp(argv[i], "-top") == 0) {
+            if (i + 1 < argc) {
+                int n;
+                if (sscanf(argv[i + 1], "%d", &n) == 1 && n > 0) {
+                    flag = FLAG_TOP;
+                    i++;
+                } else {
+                    fprintf(stderr, "Error: -top must be followed by a positive integer\n");
+                    exit(1);
+                }
+            } else {
+                fprintf(stderr, "Error: -top requires a number\n");
+                exit(1);
+            }
+        }
+
+    }
+
+    return flag;
+}
+
+
+int main(int argc, char* argv[]) {
+    if (argc < 2) {
+        //handle wrong CLI args
+        print_usage();
+        exit(1);
+    }
+
+    int flag = FLAG_INVALID;
+    flag = parse_arg(argc, argv);
+
+    if (flag == FLAG_INVALID) {
+        printf("Invalid arguments\n");
+        print_usage();
+        exit(1);
+    }
+
     int fds[2];  // need 2 buffers for ipc
 
     if (pipe(fds) == -1) { // optimized line for pipe as well as condition execution
@@ -75,14 +131,17 @@ int main() {
 
         while (1) {
             if (!read_line_from_pipe(fds[0], line)) continue;
+            printf("HEY\n");
 
             int matched = sscanf(line, "%s %u %u %zu %u %u",
                                  s.name, &s.active_objs, &s.num_objs,
                                  &s.objsize, &s.objperslab, &s.pagesperslab);
 
             if (matched == 6) {
-                printf("Received slab: %s | Active: %u | Total: %u\n",
-                       s.name, s.active_objs, s.num_objs);
+                if (flag == FLAG_ALL) {
+                    printf("Received slab: %s | Active: %u | Total: %u\n",
+                        s.name, s.active_objs, s.num_objs);
+                }
 
                 if (snapshot_phase == INIT_SNAPSHOT) {
                     list_add(s);
@@ -94,8 +153,11 @@ int main() {
                     } else {
                         diff d = list_match(s);
                         if (d.active_objs_diff != 0 || d.num_objs_diff != 0) {
-                            printf("Growth detected - Slab: %-20s | Active Δ: %+6d | Total Δ: %+6d\n",
-                                   s.name, d.active_objs_diff, d.num_objs_diff);
+                            if (flag == FLAG_DIFF) {
+                                printf("Growth detected - Slab: %-20s | Active Δ: %+6d | Total Δ: %+6d\n",
+                                    s.name, d.active_objs_diff, d.num_objs_diff);
+                            }
+                            //top k slabs list logic here
                         }
                     }
                 }
