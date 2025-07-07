@@ -11,7 +11,7 @@
     ((type *)((char *)(ptr)-(unsigned long)(&((type *)0)->member)))
 
 //declaring this head globally
-struct list_head vmstat_head;
+extern struct list_head vmstat_head;
 
 typedef struct list_head{
     struct list_head *prev, *next;

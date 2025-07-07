@@ -2,7 +2,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "vmstat/list.h"
+#include "list.h"
+struct list_head vmstat_head;
 
 void list_add_vmstat(struct vmstat *new_stat) {
     new_stat->list_head.next = vmstat_head.next;
