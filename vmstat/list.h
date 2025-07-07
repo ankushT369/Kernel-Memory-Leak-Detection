@@ -1,7 +1,7 @@
 #include <stdio.h>
 
-#define INIT_SNAPSHOT 
-#define CHECK_SNAPSHOT 
+#define INIT_SNAPSHOT 0
+#define CHECK_SNAPSHOT 1
 
 #define INIT_LIST_HEAD(ptr) do { \
     (ptr)->next = (ptr); (ptr)->prev = (ptr); \
