@@ -58,7 +58,7 @@ The core objectives of this project are:
     -top N --> Show top-N slab caches with the highest growth in objects.
   Arguments are validated at runtime, and incorrect usage results in a help message.
 
- ###3.6 Output Generation
+ ### 3.6 Output Generation
   After snapshot comparison, results are printed based on the selected mode:
   - In -diff mode: Only changed slab and VMStat entries are shown.
   - In -top N mode: Slab caches are sorted by growth and the top N are displayed.
