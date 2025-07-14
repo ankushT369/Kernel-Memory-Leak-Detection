@@ -3,6 +3,10 @@
 #define INIT_SNAPSHOT 0
 #define CHECK_SNAPSHOT 1
 
+#define READ_END 0
+#define WRITE_END 1
+#define INTERVAL 5
+
 #define INIT_LIST_HEAD(ptr) do { \
     (ptr)->next = (ptr); (ptr)->prev = (ptr); \
 } while (0)
