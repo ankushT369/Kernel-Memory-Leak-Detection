@@ -1,6 +1,6 @@
 # Kernel-Memory-Leak-Detection
 User-Space tool to detect kernel memory leaks
-
+```
 1. INTRODUCTION
 The Linux kernel uses slab allocators and virtual memory mechanisms to manage memory efficiently. However, uncontrolled growth in slab caches or virtual memory counters may indicate memory leaks or performance issues.
 This project introduces a "user-space Kernel Memory Leak Detector" that monitors kernel memory behavior by periodically reading two key files:
