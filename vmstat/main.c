@@ -17,11 +17,12 @@ void parse_vmstat_file(int phase) {
 
   static char key[100];
   static unsigned int val;
-  static char line[256];
+  //static char line[256]; cant belong here as i guess it will be the pipe buffer between them another missing point 
 
   if(pid==0){
     close(fds[READ_END]); //closing read end as its handled by the child process itself
   while(1){
+      char line[256]; //acting as a buffer in piped
     FILE *f = fopen("/proc/vmstat", "r");
     if (!f) {
         perror("Failed to open /proc/vmstat");
@@ -39,15 +40,21 @@ void parse_vmstat_file(int phase) {
   }
 }
   if(pid==1){
+    close(fds[WRITE_END]);//closing the write end as it will be worked here and recieving from it not parent's job
     /*while (fgets(line, sizeof(line), f)) {
         if (sscanf(line, "%99s %u", key, &val) != 2) continue;*/
-
+    while(1){ //what kind of condition to be applied so that it cooperates with piped READ_END ok not here maybe inside
+      char line[256];
+      while(/*the condition*/){
+        char line[256];
         struct diff d = list_update_or_add_vmstat(key, &val);
         if (phase != INIT_SNAPSHOT && d.statsdiff != 0) {
             printf("VMSTAT %-20s Δ %8u\n", d.name, d.statsdiff);
         }
+      }
     }
   }
+}
 
 
 int main() {
