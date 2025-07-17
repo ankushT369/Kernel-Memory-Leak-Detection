@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "list.h"
+#include "slabinfolist.h"
 
 //global head pointer and list size tracker
 static list* head = NULL;

@@ -3,7 +3,7 @@
 #include <sys/wait.h>
 #include <sys/types.h>
 
-#include "list.h"
+#include "slabinfolist.h"
 
 void parse_vmstat_file(int phase) {
     FILE *f = fopen("/proc/vmstat", "r");

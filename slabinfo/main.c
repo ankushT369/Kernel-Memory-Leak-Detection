@@ -5,8 +5,8 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 
-#include "kmld.h"
-#include "list.h"
+
+#include "slabinfolist.h"
 
 // Helper to read one line at a time from a pipe(as fgets doesn't work so well in pipe)
 int read_line_from_pipe(int fd, char *line) {
