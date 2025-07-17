@@ -132,3 +132,20 @@ int list_cnt() {
     return list_size;
 }
 
+// Accessor for other modules
+list *get_slab_list_head()
+{
+    return head;
+}
+
+void init_slab_list()
+{
+    // Initialize internal linked list (head is already global in your code)
+    list_del(); // if needed to reset state
+}
+
+void parse_slabinfo()
+{
+    // Use logic from orchestration: open /proc/slabinfo, skip 2 lines, parse each slab
+    // Call list_add() if new slab else update existing slab fields.
+}

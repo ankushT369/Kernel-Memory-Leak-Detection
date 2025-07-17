@@ -2,7 +2,7 @@
 #define __LIST__
 
 #include <stdbool.h>
-
+#include <stddef.h>
 #include <unistd.h>
 
 // file to parse slab allocator info
@@ -24,24 +24,6 @@
 
 typedef struct list list;
 
-//struct list stores the slabinfo. Instread of
-//fixed sized array we are taking a double linkedlist
-struct list{
-    slabinfo* slab;
-    list* prev;
-    list* next; 
-};
-
-//linkedlist functions
-list* list_add(slabinfo);
-bool list_exist(slabinfo);
-void list_trav();
-diff list_match(slabinfo);
-void list_remove(slabinfo);
-void list_del();
-int list_cnt();
-
-
 typedef struct
 {
     char name[MAX_NAME_LEN];   // slab-cache name
@@ -52,7 +34,7 @@ typedef struct
     unsigned int pagesperslab; // pages per slab
 
     double ema;
-    unsigned int pre_active_objs;
+    unsigned int prev_active_objs;
     int monotonic_count;
 } slabinfo;
 
@@ -61,5 +43,25 @@ typedef struct
     int active_objs_diff; // number of active object difference
     int num_objs_diff;    // total number of objects difference
 } diff;
+
+//struct list stores the slabinfo. Instread of
+//fixed sized array we are taking a double linkedlist
+typedef struct list{
+    slabinfo* slab;
+    list *prev;
+    list *next; 
+}list;
+
+//linkedlist functions
+list* list_add(slabinfo new_slab);
+bool list_exist(slabinfo target);
+void list_trav(void);
+diff list_match(slabinfo target);
+void list_remove(slabinfo target);
+void list_del(void);
+int list_cnt(void);
+
+//exposing head pointer
+list *get_slab_list_head(void);
 
 #endif // __LIST__

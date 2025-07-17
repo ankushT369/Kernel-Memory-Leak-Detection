@@ -3,7 +3,8 @@
 #include <sys/wait.h>
 #include <sys/types.h>
 
-#include "slabinfolist.h"
+
+#include "vmstatlist.h"
 
 void parse_vmstat_file(int phase) {
     FILE *f = fopen("/proc/vmstat", "r");
@@ -18,8 +19,8 @@ void parse_vmstat_file(int phase) {
 
     while (fgets(line, sizeof(line), f)) {
         if (sscanf(line, "%99s %u", key, &val) == 2) {
-            struct diff d = list_update_or_add_vmstat(key, val);
-            if (phase != INIT_SNAPSHOT && d.statsdiff != 0) {
+            struct diffvm d = list_update_or_add_vmstat(key, val);
+            if (phase != INIT_SNAPSHOT_vm && d.statsdiff != 0) {
                 printf("VMSTAT %-20s Δ %8u\n", d.name, d.statsdiff);
             }
         }
@@ -32,11 +33,11 @@ int main() {
     INIT_LIST_HEAD(&vmstat_head);
     printf("Taking initial snapshot...\n");
 
-    parse_vmstat_file(INIT_SNAPSHOT);
+    parse_vmstat_file(INIT_SNAPSHOT_vm);
 
     while (1) {
         sleep(INTERVAL);
-        parse_vmstat_file(CHECK_SNAPSHOT);
+        parse_vmstat_file(CHECK_SNAPSHOT_vm);
     }
 
     return 0;

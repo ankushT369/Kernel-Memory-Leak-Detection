@@ -21,8 +21,8 @@ struct vmstat* list_find_vmstat(const char *name) {
     return NULL;
 }
 
-struct diff list_update_or_add_vmstat(const char *name, unsigned int new_stats) {
-    struct diff d;
+struct diffvm list_update_or_add_vmstat(const char *name, unsigned int new_stats) {
+    struct diffvm d;
     strcpy(d.name, name);
     d.statsdiff = 0;
 
@@ -40,3 +40,43 @@ struct diff list_update_or_add_vmstat(const char *name, unsigned int new_stats) 
     return d;
 }
 
+
+struct list_head vmstat_head;
+
+void init_vmstat_list()
+{
+    INIT_LIST_HEAD(&vmstat_head);
+}
+
+void parse_vmstat()
+{
+    FILE *fp = fopen("/proc/vmstat", "r");
+    if (!fp)
+    {
+        perror("fopen /proc/vmstat");
+        return;
+    }
+    char name[128];
+    unsigned long long val;
+    while (fscanf(fp, "%127s %llu", name, &val) == 2)
+    {
+        list_update_or_add_vmstat(name, (unsigned int)val);
+    }
+    fclose(fp);
+}
+
+unsigned int get_vmstat(const char *name)
+{
+    struct vmstat *entry = list_find_vmstat(name);
+    return entry ? entry->stats : 0;
+}
+
+void show_vmstat_summary()
+{
+    unsigned int memfree = get_vmstat("nr_free_pages");
+    unsigned int reclaim = get_vmstat("nr_slab_reclaimable");
+    unsigned int unreclaim = get_vmstat("nr_slab_unreclaimable");
+
+    printf("[VMSTAT] free_pages=%u reclaimable=%u unreclaimable=%u\n",
+           memfree, reclaim, unreclaim);
+}

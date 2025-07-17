@@ -1,7 +1,7 @@
 #include <stdio.h>
 
-#define INIT_SNAPSHOT 0
-#define CHECK_SNAPSHOT 1
+#define INIT_SNAPSHOT_vm 1
+#define CHECK_SNAPSHOT_vm 2
 
 #define READ_END 0
 #define WRITE_END 1
@@ -28,11 +28,11 @@ typedef struct vmstat{
 /*struct zone{
     struct vmstat vmstat[100];
 };*/
-typedef struct diff{
+typedef struct diffvm{
     char name[100];
     unsigned int statsdiff;
-}diff;
+}diffvm;
 
-struct diff list_update_or_add_vmstat(const char *name, unsigned int new_stats);
+struct diffvm list_update_or_add_vmstat(const char *name, unsigned int new_stats);
 struct vmstat* list_find_vmstat(const char *name);
 void list_add_vmstat(struct vmstat *new_stat);

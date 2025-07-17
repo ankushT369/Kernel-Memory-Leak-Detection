@@ -1,20 +1,46 @@
 #include <stdio.h>
-
+#include <unistd.h>
 
 #include "vmstatlist.h"
 #include "slabinfolist.h"
+#include "trend.h"
+#include "correlation.h"
 
+#define INTERVAL 5
+#define TOP_N 10
 
-update_ema(){}
+int main()
+{
+    printf("Starting Kernel Memory Leak Detector...\n");
 
-check_growth(){}
+    init_vmstat_list();
+    init_slab_list();
 
-check_monotonic_growth(){}
+    // Initial snapshots for both proc dirs
+    parse_vmstat();
+    parse_slabinfo();
 
-correlate_vmstat_growth(){}
+    
+    init_trend_tracking();
 
+    while (1)
+    {
+        sleep(INTERVAL);
 
-int main(){
-    printf("now the need is to orchestrate the files from vmstat and slabinfo and collectively calculate the memory leak taking place and the logic is to be designed further");
+        parse_vmstat();
+        parse_slabinfo();
+
+        // Trend updates
+        update_ema_for_slabs();
+        compute_growth_for_slabs();
+        update_monotonic_for_slabs();
+
+        // Correlate VMStat & slab growth
+        correlate_vmstat_slab();
+
+        // Display alerts & rankings
+        show_topN_slabs(TOP_N);
+        show_vmstat_summary();
+    }
     return 0;
 }
