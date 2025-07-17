@@ -4,7 +4,7 @@
 #include <sys/wait.h>
 #include <string.h>
 
-#include "list.h"
+#include "vmstatlist.h"
 
 #define BUFFER_SIZE 4096  // Enough for /proc/vmstat
 
@@ -29,7 +29,7 @@ void parse_vmstat_buffer(const char *buffer, int phase) {
 
         // Extract key and value
         if (sscanf(temp, "%99s %u", key, &val) == 2) {
-            struct diff d = list_update_or_add_vmstat(key, val);
+            struct diffvm d = list_update_or_add_vmstat(key, val);
             if (phase != INIT_SNAPSHOT_vm && d.statsdiff != 0) {
                 printf("VMSTAT %-20s Δ %8u\n", d.name, d.statsdiff);
             }
