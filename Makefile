@@ -14,12 +14,12 @@ INCLUDES = -I./slabinfo -I./vmstat
 all: $(TARGET)
 
 $(TARGET): $(OBJS)
-    $(CC) $(CFLAGS) $(INCLUDES) -o $@ $^ $(LDFLAGS)
+	$(CC) $(CFLAGS) $(INCLUDES) -o $@ $^ $(LDFLAGS)
 
 %.o: %.c
-    $(CC) $(CFLAGS) $(INCLUDES) -c $< -o $@
+	$(CC) $(CFLAGS) $(INCLUDES) -c $< -o $@
 
 clean:
-    rm -f $(OBJS) $(TARGET)
+	rm -f $(OBJS) $(TARGET)
 
 .PHONY: all clean
