@@ -146,6 +146,35 @@ void init_slab_list()
 
 void parse_slabinfo()
 {
-    // Use logic from orchestration: open /proc/slabinfo, skip 2 lines, parse each slab
-    // Call list_add() if new slab else update existing slab fields.
+    FILE *file = fopen(FILE_SLABINFO, "r");
+    if (!file) {
+        perror("cannot open /proc/slabinfo");
+        return;
+    }
+
+    char line[LINE_BUFFER];
+    slabinfo s;
+
+    // skip first two lines (headers)
+    fgets(line, sizeof(line), file);
+    fgets(line, sizeof(line), file);
+
+    // read each slab line
+    while (fgets(line, sizeof(line), file)) {
+        int matched = sscanf(line, "%s %u %u %zu %u %u",
+                            s.name, &s.active_objs, &s.num_objs,
+                            &s.objsize, &s.objperslab, &s.pagesperslab);
+        
+        if (matched != 6)
+            continue;
+
+        if (!list_exist(s)) {
+            list_add(s);
+        } else {
+            // Update existing slab
+            diff d = list_match(s);
+        }
+    }
+
+    fclose(file);
 }

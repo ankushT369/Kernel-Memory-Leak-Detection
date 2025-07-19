@@ -41,8 +41,6 @@ struct diffvm list_update_or_add_vmstat(const char *name, unsigned int new_stats
 }
 
 
-struct list_head vmstat_head;
-
 void init_vmstat_list()
 {
     INIT_LIST_HEAD(&vmstat_head);
