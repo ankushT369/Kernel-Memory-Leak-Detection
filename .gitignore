@@ -1,0 +1,9 @@
+# Ignore the build directory (all object files go here)
+build/
+
+# Ignore the final executable
+kernel_leak_detector
+
+# Ignore any stray object files (outside build/)
+*.o
+
