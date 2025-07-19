@@ -60,6 +60,8 @@ diff list_match(slabinfo target);
 void list_remove(slabinfo target);
 void list_del(void);
 int list_cnt(void);
+void init_slab_list();
+void parse_slabinfo(void);
 
 //exposing head pointer
 list *get_slab_list_head(void);

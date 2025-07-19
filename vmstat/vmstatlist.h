@@ -36,3 +36,7 @@ typedef struct diffvm{
 struct diffvm list_update_or_add_vmstat(const char *name, unsigned int new_stats);
 struct vmstat* list_find_vmstat(const char *name);
 void list_add_vmstat(struct vmstat *new_stat);
+void init_vmstat_list();
+void parse_vmstat();
+unsigned int get_vmstat(const char *name);
+void show_vmstat_summary();
