@@ -1,8 +1,9 @@
 #include <stdio.h>
 #include <unistd.h>
 
-#include "vmstatlist.h"
-#include "slabinfolist.h"
+#include <vmstatlist.h>
+#include <slabinfolist.h>
+
 #include "trend.h"
 #include "correlation.h"
 
