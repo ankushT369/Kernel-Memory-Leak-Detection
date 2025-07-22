@@ -36,6 +36,8 @@ typedef struct
     double ema;
     unsigned int prev_active_objs;
     int monotonic_count;
+    float growth;
+    unsigned int baseline_active_objs;  // Starting point for long-term analysis
 } slabinfo;
 
 typedef struct

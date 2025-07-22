@@ -172,9 +172,46 @@ void parse_slabinfo()
             list_add(s);
         } else {
             // Update existing slab
-            diff d = list_match(s);
+            list* temp = head;
+            while (temp) {
+                if (slabinfo_equal(*(temp->slab), s)) {
+                    // Save the previous value before updating
+                    temp->slab->prev_active_objs = temp->slab->active_objs;
+                    // Update with new values
+                    temp->slab->active_objs = s.active_objs;
+                    temp->slab->num_objs = s.num_objs;
+
+                    // Add after updating values (for debugging)
+                    //printf("DEBUG: Updated %s: old=%u new=%u\n", 
+                    //       temp->slab->name, temp->slab->prev_active_objs, temp->slab->active_objs);
+
+                    break;
+                }
+                temp = temp->next;
+            }
         }
     }
 
     fclose(file);
+}
+
+// Add this function:
+void show_long_term_growth()
+{
+    printf("\n--- Long-Term Growth Analysis ---\n");
+    list *cur = get_slab_list_head();
+    while (cur) {
+        float long_term_growth = 0;
+        if (cur->slab->baseline_active_objs > 0) {
+            long_term_growth = ((float)cur->slab->active_objs - cur->slab->baseline_active_objs) / 
+                              (float)cur->slab->baseline_active_objs * 100.0f;
+        }
+        
+        if (long_term_growth > 10.0f) {
+            printf("\033[1;35m[LONG-TERM] %s has grown %.1f%% since start\033[0m\n", 
+                   cur->slab->name, long_term_growth);
+        }
+        
+        cur = cur->next;
+    }
 }
