@@ -64,3 +64,9 @@ The core objectives of this project are:
   - In -top N mode: Slab caches are sorted by growth and the top N are displayed.
   - In -all mode: All current entries are printed regardless of changes.
    
+## 4. BUILD & RUN
+
+### Build
+To compile the tool:
+```bash
+make
