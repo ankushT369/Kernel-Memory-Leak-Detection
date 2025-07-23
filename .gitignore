@@ -7,3 +7,5 @@ kernel_leak_detector
 # Ignore any stray object files (outside build/)
 *.o
 
+# Ignore this binary
+./test/stress_shm
