@@ -30,8 +30,29 @@ void parse_vmstat_buffer(const char *buffer, int phase) {
         // Extract key and value
         if (sscanf(temp, "%99s %u", key, &val) == 2) {
             struct diffvm d = list_update_or_add_vmstat(key, val);
-            if (phase != INIT_SNAPSHOT_vm && d.statsdiff != 0) {
-                printf("VMSTAT %-20s Δ %8u\n", d.name, d.statsdiff);
+            if (phase != INIT_SNAPSHOT_vm) {
+                if (vmstat_mode == 0 && d.statsdiff != 0) {
+                    printf("VMSTAT %-20s Δ %8u\n", d.name, d.statsdiff);
+                }
+                // NPC 1
+                if (vmstat_mode == 1 && strcmp(key, "nr_free_pages") == 0) {
+                    printf("nr_free_pages: %u\n", val);
+                }
+                // NPC 2
+                else if (vmstat_mode == 2 && strcmp(key, "nr_reclaimable") == 0) {
+                    printf("nr_reclaimable: %u\n", val);
+                }
+                // NPC 3
+                else if (vmstat_mode == 3 && strcmp(key, "nr_unreclaimable") == 0) {
+                    printf("nr_unreclaimable: %u\n", val);
+                }
+                // NPC 3 continues for all 3
+                else if (vmstat_mode == 4 &&
+                    (strcmp(key, "nr_free_pages") == 0 ||
+                     strcmp(key, "nr_reclaimable") == 0 ||
+                     strcmp(key, "nr_unreclaimable") == 0)) {
+                    printf("%s: %u\n", key, val);
+                }
             }
         }
 
@@ -92,14 +113,31 @@ void fetch_and_parse_vmstat(int phase) {
     }
 }
 
-int main() {
+int main(int argc, char *argv[]) {
     INIT_LIST_HEAD(&vmstat_head);  // Initialize the stats list
 
-    printf("Taking initial snapshot...\n");
-    fetch_and_parse_vmstat(INIT_SNAPSHOT_vm);  // First snapshot
+    if (argc == 2) {
+        if (strcmp(argv[1], "-vmstat-free") == 0)
+            vmstat_mode = 1;
+        else if (strcmp(argv[1], "-vmstat-reclaimable") == 0)
+            vmstat_mode = 2;
+        else if (strcmp(argv[1], "-vmstat-unreclaimable") == 0)
+            vmstat_mode = 3;
+        else if (strcmp(argv[1], "-vmstat-all") == 0)
+            vmstat_mode = 4;
+        else {
+            fprintf(stderr, "Unknown flag: %s\n", argv[1]);
+            return 1;
+        }
+    }
+
+    fetch_and_parse_vmstat(INIT_SNAPSHOT_vm);
+
+    if (vmstat_mode != 0)
+        return 0;
 
     while (1) {
-        sleep(INTERVAL);  // Wait before next snapshot
+        sleep(INTERVAL);
         fetch_and_parse_vmstat(CHECK_SNAPSHOT_vm);
     }
 
